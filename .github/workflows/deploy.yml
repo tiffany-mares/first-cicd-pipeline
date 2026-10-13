@@ -20,5 +20,5 @@ jobs:
           aws-region: ca-central-1
 
       - run: |
-          aws s3 sync . s3://tiffany-mares-site-17239 --delete \
+          aws s3 sync . s3://tiffany-mares-site-17238 --delete \
             --exclude ".git/*" --exclude ".github/*"
