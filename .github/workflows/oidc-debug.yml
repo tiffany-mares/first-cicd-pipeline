@@ -11,7 +11,7 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Print the OIDC token claims
+      - name: Print the OIDC token claims GitHub is actually sending
         run: |
           TOKEN=$(curl -sS \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
@@ -19,8 +19,17 @@ jobs:
             | jq -r '.value')
 
           if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "FAILED to get a token. 'permissions: id-token: write' is missing"
-            echo "or nested in the wrong place. It must be at the top level."
+            echo "FAILED to get a token."
+            echo ""
+            echo "DO THIS:"
+            echo "1. Open .github/workflows/oidc-debug.yml in your repo."
+            echo "2. Find the 'permissions:' block. It must be at the far left"
+            echo "   (no indentation), NOT inside 'jobs:'."
+            echo "3. It must contain exactly these two lines:"
+            echo "     permissions:"
+            echo "       id-token: write"
+            echo "       contents: read"
+            echo "4. Fix it, commit, push, and run this workflow again."
             exit 1
           fi
 
@@ -31,3 +40,19 @@ jobs:
           echo "$PAYLOAD" | tr '_-' '/+' | base64 -d \
             | jq '{iss, aud, sub, repository, repository_owner, ref}'
           echo "=================================="
+          echo ""
+          echo "DO THIS with the values above:"
+          echo ""
+          echo "1. Copy the 'sub' value, WITHOUT the quotes."
+          echo "2. In it, replace the ending ':ref:refs/heads/main' with ':*'"
+          echo "   Example: repo:you@123/site@456:ref:refs/heads/main"
+          echo "   becomes: repo:you@123/site@456:*"
+          echo "3. AWS console -> IAM -> Roles -> your deploy role"
+          echo "   -> Trust relationships -> Edit trust policy."
+          echo "4. Put that value in the condition, under StringLike:"
+          echo "     \"StringLike\": {"
+          echo "       \"token.actions.githubusercontent.com:sub\": \"PASTE_IT_HERE\""
+          echo "     }"
+          echo "5. Click Update policy."
+          echo "6. Re-run your deploy workflow (Actions tab -> failed run"
+          echo "   -> Re-run all jobs)."
